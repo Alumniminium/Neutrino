@@ -75,6 +75,8 @@ namespace Neutrino
 
         public void Destroy()
         {
+            BufferSize = 0;
+            BufferSize = 0;
             Socket?.Dispose();
         }
     }

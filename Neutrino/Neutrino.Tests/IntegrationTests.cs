@@ -7,12 +7,13 @@ using Xunit;
 
 namespace Neutrino.Tests
 {
-    public class ClientTests : IClassFixture<SetupServer>
+    public class IntegrationTests : IClassFixture<SetupServer>
     {
-        private Server Server;
-        public ClientTests(SetupServer setup)
+        private SetupServer Setup;
+
+        public IntegrationTests(SetupServer setup)
         {
-            Server = setup.S;
+            Setup = setup;
         }
         private static TcpClient CreateClient()
         {
@@ -25,25 +26,19 @@ namespace Neutrino.Tests
         [Fact]
         public void CanConnect()
         {
-            TcpClient tcpCli = CreateClient();
-
-            var serverGotConnection = false;
-            Server.OnConnection += connection =>
-            {
-                serverGotConnection = true;
-            };
+            var tcpCli = CreateClient();
 
             tcpCli.ConnectAsync(IPAddress.Loopback, 65000);
             Thread.Sleep(1000);
 
             Assert.True(tcpCli.Connected, "Client thinks its connected");
-            Assert.True(serverGotConnection, "Server got a connection");
+            Assert.True(Setup.GotConnection, "Server got a connection");
         }
-
+        
         [Fact]
-        public void CanSend()
+        public void ServerAcceptsPacket()
         {
-            TcpClient tcpCli = CreateClient();
+            var tcpCli = CreateClient();
             tcpCli.Connect(IPAddress.Loopback, 65000);
             var stream = tcpCli.GetStream();
 
@@ -54,9 +49,9 @@ namespace Neutrino.Tests
             Assert.True(true);
         }
         [Fact]
-        public void CanReceive()
+        public void ServerRespondsToPacket()
         {
-            TcpClient tcpCli = CreateClient();
+            var tcpCli = CreateClient();
             tcpCli.Connect(IPAddress.Loopback, 65000);
             var stream = tcpCli.GetStream();
             var msg = Encoding.ASCII.GetBytes("Hello AluSocket!");
