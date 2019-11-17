@@ -7,28 +7,13 @@ using Xunit;
 
 namespace Neutrino.Tests
 {
-    public class ServerTests
+    public class ClientTests : IClassFixture<SetupServer>
     {
-        [Fact]
-        public void ServerStarts()
+        private Server Server;
+        public ClientTests(SetupServer setup)
         {
-            var server = new Server().Start();
-            Assert.True(true);
+            Server = setup.S;
         }
-        [Theory]
-        [InlineData(-30)]
-        [InlineData(0)]
-        [InlineData(3)]
-        [InlineData(1024)]
-        [InlineData(10000)]
-        public void CanSetPort(ushort port)
-        {
-            var server = new Server().SetPort(port).Start();
-            Assert.True(true);
-        }
-    }
-    public class ClientTests
-    {
         private static TcpClient CreateClient()
         {
             var tcpCli = new TcpClient();
@@ -42,10 +27,17 @@ namespace Neutrino.Tests
         {
             TcpClient tcpCli = CreateClient();
 
+            var serverGotConnection = false;
+            Server.OnConnection += connection =>
+            {
+                serverGotConnection = true;
+            };
+
             tcpCli.ConnectAsync(IPAddress.Loopback, 65000);
             Thread.Sleep(1000);
 
-            Assert.True(tcpCli.Connected);
+            Assert.True(tcpCli.Connected, "Client thinks its connected");
+            Assert.True(serverGotConnection, "Server got a connection");
         }
 
         [Fact]
@@ -67,7 +59,6 @@ namespace Neutrino.Tests
             TcpClient tcpCli = CreateClient();
             tcpCli.Connect(IPAddress.Loopback, 65000);
             var stream = tcpCli.GetStream();
-
             var msg = Encoding.ASCII.GetBytes("Hello AluSocket!");
             var size = msg.Length + 4;
             stream.Write(BitConverter.GetBytes(size));

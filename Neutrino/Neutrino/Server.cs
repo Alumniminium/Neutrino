@@ -72,5 +72,10 @@ namespace Neutrino
             output += "Buffer Size: " + BufferSize + Environment.NewLine;
             return output;
         }
+
+        public void Destroy()
+        {
+            Socket?.Dispose();
+        }
     }
 }
