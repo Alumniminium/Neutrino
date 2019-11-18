@@ -15,7 +15,6 @@ namespace Neutrino
 
         public Server()
         {
-            Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             AcceptArgs = SaeaFactory.GetArgs();
             AcceptArgs.Completed += (s, e) => Accepted(e);
         }
@@ -33,6 +32,7 @@ namespace Neutrino
         {
             if (!IsOnline)
             {
+                Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 Socket.Bind(new IPEndPoint(IPAddress.Any, Port));
                 Socket.Listen(1);
                 Accept();
@@ -44,19 +44,29 @@ namespace Neutrino
 
         private void Accept()
         {
+            if (Socket == null)
+                return;
+
             if (!Socket.AcceptAsync(AcceptArgs))
                 Accepted(AcceptArgs);
         }
 
         private void Accepted(SocketAsyncEventArgs acceptArgs)
         {
-            if (acceptArgs.SocketError == SocketError.Success)
+            try
             {
-                var socket = acceptArgs.AcceptSocket;
-                OnConnection?.Invoke(new Connection(socket, new byte[2048]));
+                if (acceptArgs.SocketError == SocketError.Success)
+                {
+                    var socket = acceptArgs.AcceptSocket;
+                    OnConnection?.Invoke(new Connection(socket, new byte[2048]));
+                }
+                acceptArgs.AcceptSocket = null;
+                Accept();
             }
-            acceptArgs.AcceptSocket = null;
-            Accept();
+            catch
+            {
+                Destroy();
+            }
         }
 
 
@@ -75,8 +85,7 @@ namespace Neutrino
 
         public void Destroy()
         {
-            BufferSize = 0;
-            BufferSize = 0;
+            IsOnline = false;
             Socket?.Dispose();
         }
     }
